@@ -187,14 +187,16 @@ class Sse:
         app.ctx.sse_send = self.send
         app.ctx.sse_send_nowait = self.send_nowait
 
-        @app.route(self._url, methods=["GET"])
+        @app.route(self._url, methods=["GET"], name="sse_handler")
         async def _(request: Request):
             if self._before_request is not None:
                 await self._before_request(request)
 
             channel_id = request.args.get("channel_id", None)
             client_id = self._pubsub.register(channel_id)
-            response = await request.respond(headers=self._HEADERS, content_type="text/event-stream")
+            response = await request.respond(
+                headers=self._HEADERS, content_type="text/event-stream"
+            )
             try:
                 while True:
                     try:
@@ -205,3 +207,4 @@ class Sse:
                     self._pubsub.task_done(client_id, channel_id)
             finally:
                 self._pubsub.delete(client_id, channel_id)
+
